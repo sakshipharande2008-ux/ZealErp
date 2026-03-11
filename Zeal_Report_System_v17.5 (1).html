@@ -1349,7 +1349,7 @@ async function showPage(pg) {
   buildSidebar();
   if (pg==='dashboard') renderDashboard();
   else if (pg==='unified') renderUnified();
-  else if (pg==='download') await renderDownload();
+  else if (pg==='download') renderDownload();
   else if (pg==='log') renderLog();
   else if (pg==='director') renderDirector();
   else if (pg==='admin') renderAdmin();
@@ -1457,11 +1457,14 @@ const today = document.getElementById('dir-date')?.value || new Date().toISOStri
 
   document.getElementById('sidebar').innerHTML = html;
 }
-function sbItem(pg, ico, label, badge) {
-  return `<div class="sb-item ${activePage===pg?'active':''}" onclick="showPage('${pg}')">
-    <span class="ico">${ico}</span><span>${label}</span>
-    ${badge!==undefined?`<span class="sbadge">${badge}</span>`:''}
-  </div>`;
+function sbItem(pg, icon, label, badge = '') {
+  return `
+    <div class="sb-item ${activePage===pg ? 'active':''}" onclick="showPage('${pg}')">
+      <span class="ico">${icon}</span>
+      <span>${label}</span>
+      ${badge ? `<span class="sbadge">${badge}</span>` : ''}
+    </div>
+  `;
 }
 
 // ================================================================

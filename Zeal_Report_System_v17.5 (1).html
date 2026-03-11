@@ -1746,6 +1746,7 @@ async function renderUnified(){
   if(!subs) subs = [];
 
   // Filter only what user can see
+  const acc = ACCESS_META[CU.access];
   const visibleSubs = subs.filter(s => CU.canViewRoles.includes(s.role));
   const todayVisible = visibleSubs.filter(s => s.date === today);
 

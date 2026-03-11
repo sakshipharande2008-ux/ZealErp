@@ -2131,11 +2131,12 @@ async function renderDownload() {
     <div style="overflow-x:auto"><table class="ut">
       <thead><tr><th>Report</th><th>Name</th><th>Role</th><th>Submissions</th><th>Last Submitted</th><th>Download</th></tr></thead>
       <tbody>${[...REPORTS.faculty,...REPORTS.hod,...REPORTS.principal].map(r=>{
-        const role2=r.id.startsWith('F')?'faculty':r.id.startsWith('H')?'hod':'principal';
-        if(!CU.canViewRoles.includes(role2)) return '';
-        const allSubs = await DB.all() || [];
-        const visibleSubs = filterByAccess(allSubs, CU) || [];
-        const last=subs.length?subs[subs.length-1]:null;
+        <tbody>${[...REPORTS.faculty,...REPORTS.hod,...REPORTS.principal].map(r=>{
+          const role2 = r.id.startsWith('F') ? 'faculty' : r.id.startsWith('H') ? 'hod' : 'principal';
+          if(!CU.canViewRoles.includes(role2)) return '';
+        
+          const subs = visibleSubs.filter(s => s.reportId === r.id);
+          const last = subs.length ? subs[subs.length - 1] : null;
         const rc2=role2==='faculty'?'f':role2==='hod'?'h':'p';
         return `<tr>
           <td><span class="tag ${rc2}">${r.code}</span></td>

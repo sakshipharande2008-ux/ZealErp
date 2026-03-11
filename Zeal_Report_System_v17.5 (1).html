@@ -2007,6 +2007,7 @@ async function renderDownload() {
 
   const allSubs = await DB.all() || [];
   const visibleSubs = filterByAccess(allSubs, CU) || [];
+  CU.canViewRoles = CU.canViewRoles || [];
 
   // Collect unique institutes and departments
   const instSet  = [...new Set(visibleSubs.map(s=>s.institute).filter(Boolean))].sort();

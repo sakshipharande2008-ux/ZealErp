@@ -2015,8 +2015,8 @@ async function renderDownload() {
   const instOpts = instSet.map(i=>`<option value="${i}">${i}</option>`).join('');
   const deptOpts = deptSet.map(d=>`<option value="${d}">${d}</option>`).join('');
 
-  const roleOpts = CU.canViewRoles
-    .filter(r=>r!=='director')
+  const roleOpts = (CU.canViewRoles || [])
+  .filter(r=>r!=='director')
     .map(r=>`<option value="${r}">${r.charAt(0).toUpperCase()+r.slice(1)}</option>`)
     .join('');
 

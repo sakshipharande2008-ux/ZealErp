@@ -1321,17 +1321,24 @@ function doLogout() {
 // NAV
 // ================================================================
 function buildTopNav() {
+
   const navItems = [
-    { pg:'dashboard', label:'Dashboard',      show: CU.role !== 'director' },
-    { pg:'unified',   label:'Unified View',   show: canViewUnified(CU) },
-    { pg:'download',  label:'⬇ Downloads',    show: CU.canDownload },
-    { pg:'log',       label:'My Log',         show: true },
-    { pg:'director',  label:'👁️ Director',    show: canViewDirector(CU) },
-    { pg:'admin',     label:'⚙️ User Admin',  show: canManageUsers(CU) },
+    { pg:'dashboard', label:'Dashboard', show:true },
+    { pg:'unified', label:'Unified View', show:true },
+    { pg:'download', label:'⬇ Downloads', show:true },
+    { pg:'log', label:'My Log', show:true },
+    { pg:'director', label:'👁️ Director', show:canViewDirector(CU) },
+    { pg:'admin', label:'⚙️ User Admin', show:canManageUsers(CU) },
   ];
-  document.getElementById('tb-mid').innerHTML = navItems.filter(n=>n.show).map(n=>
-    `<button class="tb-nav ${activePage===n.pg?'active':''}" onclick="showPage('${n.pg}')">${n.label}</button>`
-  ).join('');
+
+  document.getElementById('tb-mid').innerHTML =
+    navItems
+      .filter(n => n.show)
+      .map(n =>
+        `<button class="tb-nav ${activePage===n.pg?'active':''}"
+         onclick="showPage('${n.pg}')">${n.label}</button>`
+      )
+      .join('');
 }
 
 function showPage(pg) {

@@ -2207,7 +2207,7 @@ async function renderDownload() {
 
     if(!CU.canViewRoles.includes(role2)) return '';
 
-    const subs = visibleSubs.filter(s => s.reportId === r.id);
+    const subs = (visibleSubs || []).filter(s => s.reportId === r.id);
 
     const last = subs.length ? subs[subs.length-1] : null;
 

@@ -1917,8 +1917,8 @@ function renderDownload() {
     mOpts += `<option value="${m}" ${m===curMonth?'selected':''}>${mn}</option>`;
   }
 
-  const visibleSubs = filterByAccess(DB.all(), CU);
-  const acc = ACCESS_META[CU.access];
+  const visibleSubs = filterByAccess(DB.all() || [], CU) || [];
+  const todayVisible = visibleSubs.filter(s => s.date === today);
 
   // Collect unique institutes and departments from visible submissions
   const instSet  = [...new Set(visibleSubs.map(s=>s.institute).filter(Boolean))].sort();

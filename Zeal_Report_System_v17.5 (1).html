@@ -1397,7 +1397,7 @@ async function buildSidebar() {
   }
 
   if (canViewUnified(CU)) html += sbItem('unified','📊','Unified View');
-  if (CU.canDownload) html += sbItem('download','⬇','Downloads');
+  if (ROLE_DEFAULTS[CU.role]?.canDownload) html += sbItem('download','⬇','Downloads');
 
   html += sbItem('log','📁','My Log', DB.byUser(CU.username).length);
 

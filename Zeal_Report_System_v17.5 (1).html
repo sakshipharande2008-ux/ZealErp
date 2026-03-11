@@ -1267,6 +1267,7 @@ async function doLogin() {
   const user = await UDB.findAuth(uname, pass);
   if (!user) { err.style.display='block'; setTimeout(()=>err.style.display='none',3500); return; }
   CU = user;
+  buildTopNav();
   err.style.display = 'none';
   document.getElementById('s-login').classList.remove('active');
   document.getElementById('s-app').classList.add('active');
@@ -1325,10 +1326,10 @@ function buildTopNav() {
   const navItems = [
     { pg:'dashboard', label:'Dashboard', show:true },
     { pg:'unified', label:'Unified View', show:true },
-    { pg:'download', label:'⬇ Downloads', show:true },
+    { pg:'download', label:'⬇ Downloads', show:true },   // force show
     { pg:'log', label:'My Log', show:true },
     { pg:'director', label:'👁️ Director', show:canViewDirector(CU) },
-    { pg:'admin', label:'⚙️ User Admin', show:canManageUsers(CU) },
+    { pg:'admin', label:'⚙️ User Admin', show:canManageUsers(CU) }
   ];
 
   document.getElementById('tb-mid').innerHTML =
@@ -1699,7 +1700,7 @@ function refreshUT() {
 // DOWNLOAD PAGE (privacy-filtered)
 // ================================================================
 function renderDownload() {
-  if (!CU.canDownload) {
+  if (!ROLE_DEFAULTS[CU.role]?.canDownload) {
     document.getElementById('page-download').innerHTML = accessDeniedHTML('Downloads', 'Download access is not enabled for your account. Only HOD, Principal, and Director can download reports.', CU);
     return;
   }

@@ -1382,8 +1382,7 @@ async function buildSidebar() {
 
   const isDir = CU && CU.role === 'director';
   const reps = isDir ? [] : getUserReports(CU);
-  const today = new Date().toISOString().slice(0,10);
-  const todaySubs = DB.today(CU.username);
+const today = document.getElementById('dir-date')?.value || new Date().toISOString().slice(0,10);  const todaySubs = DB.today(CU.username);
 
   const accessMeta = ACCESS_META[CU.access] || ACCESS_META[ACCESS.OWN_ONLY];
 
@@ -1396,9 +1395,13 @@ async function buildSidebar() {
   }
 
   if (canViewUnified(CU)) html += sbItem('unified','📊','Unified View');
-  if (ROLE_DEFAULTS[CU.role]?.canDownload) html += sbItem('download','⬇','Downloads');
+  if (CU.canDownload) html += sbItem('download','⬇','Downloads');
 
   html += sbItem('log','📁','My Log', DB.byUser(CU.username).length);
+
+  if(CU.role === 'faculty'){
+  html += sbItem('student-attendance','📋','Student Attendance');
+}
 
   if (canManageUsers(CU)) html += sbItem('admin','⚙️','User Admin');
 
@@ -1455,7 +1458,6 @@ async function buildSidebar() {
 
   document.getElementById('sidebar').innerHTML = html;
 }
-
 function sbItem(pg, ico, label, badge) {
   return `<div class="sb-item ${activePage===pg?'active':''}" onclick="showPage('${pg}')">
     <span class="ico">${ico}</span><span>${label}</span>
@@ -1519,6 +1521,207 @@ const m = accessMeta;
   });
   html += `</div>`;
   document.getElementById('page-dashboard').innerHTML = html;
+}
+  function renderStudentAttendance(){
+
+let html = `
+<div class="pg-head">
+  <div class="pg-title">Student Attendance Register</div>
+  <div class="pg-sub">Track student attendance. Absent entries auto-populate Faculty D2 & D3.</div>
+</div>
+
+<div class="card">
+
+<div class="card-title">Add Student Attendance Record</div>
+
+<div class="frow c4">
+
+<div class="fld">
+<label>Student Name</label>
+<input id="sa_name" placeholder="Full name">
+</div>
+
+<div class="fld">
+<label>Year</label>
+<select id="sa_year">
+<option>FY</option>
+<option>SY</option>
+<option>TY</option>
+</select>
+</div>
+
+<div class="fld">
+<label>Division</label>
+<input id="sa_div" placeholder="A / B / C">
+</div>
+
+<div class="fld">
+<label>GFM Name</label>
+<input id="sa_gfm">
+</div>
+
+</div>
+
+<div class="frow c4">
+
+<div class="fld">
+<label>Student Contact</label>
+<input id="sa_student_contact">
+</div>
+
+<div class="fld">
+<label>Parent Contact</label>
+<input id="sa_parent_contact">
+</div>
+
+<div class="fld">
+<label>Date</label>
+<input type="date" id="sa_date">
+</div>
+
+<div class="fld">
+<label>Status</label>
+<select id="sa_status">
+<option>Present</option>
+<option>Absent</option>
+</select>
+</div>
+
+</div>
+
+<div class="frow c1">
+
+<div class="fld">
+<label>Remark</label>
+<input id="sa_remark">
+</div>
+
+</div>
+
+<button class="btn-primary" onclick="addStudentAttendance()">+ Add Record</button>
+
+</div>
+
+<div class="card">
+
+<div class="card-title">Attendance Records</div>
+
+<table class="ut">
+<thead>
+<tr>
+<th>#</th>
+<th>Student</th>
+<th>Year</th>
+<th>Division</th>
+<th>GFM</th>
+<th>Status</th>
+<th>Date</th>
+<th>D2/D3</th>
+</tr>
+</thead>
+
+<tbody id="sa_table"></tbody>
+
+</table>
+
+</div>
+`;
+
+document.getElementById('page-student-attendance').innerHTML = html;
+
+loadAttendanceTable();
+
+}
+
+function addStudentAttendance(){
+
+const rec = {
+
+
+student : document.getElementById('sa_name').value,
+year : document.getElementById('sa_year').value,
+division : document.getElementById('sa_div').value,
+gfm : document.getElementById('sa_gfm').value,
+
+student_contact : document.getElementById('sa_student_contact').value,
+parent_contact : document.getElementById('sa_parent_contact').value,
+
+date : document.getElementById('sa_date').value,
+status : document.getElementById('sa_status').value,
+remark : document.getElementById('sa_remark').value
+
+
+};
+
+DB.save({
+reportId : "STUDENT_ATT",
+role : "faculty",
+userName : CU.name,
+institute : CU.institute,
+dept : CU.dept,
+...rec
+});
+
+processAbsentStudent(rec);
+
+loadAttendanceTable();
+
+showToast("Attendance saved","ok");
+
+}
+
+function processAbsentStudent(rec){
+
+if(rec.status !== "Absent") return;
+
+DB.save({
+
+
+reportId : "F-D3",
+role : "faculty",
+
+userName : CU.name,
+institute : CU.institute,
+dept : CU.dept,
+
+student : rec.student,
+division : rec.division,
+gfm : rec.gfm,
+
+parent_contact : rec.parent_contact,
+date : rec.date,
+
+remark : "Auto: Student absent"
+
+
+});
+
+updateFacultyD2(rec.gfm , rec.date);
+
+}
+
+function updateFacultyD2(gfm,date){
+
+const all = DB.all();
+
+const absents = all.filter(r =>
+r.reportId === "F-D3" &&
+r.date === date &&
+r.gfm === gfm
+);
+
+const count = absents.length;
+
+const d2 = all.find(r =>
+r.reportId === "F-D2" &&
+r.userName === gfm &&
+r.date === date
+);
+
+if(d2){
+d2.absent_students = count;
+}
+
 }
 
 // ================================================================

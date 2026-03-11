@@ -1324,6 +1324,7 @@ function buildTopNav() {
   const navItems = [
     { pg:'dashboard', label:'Dashboard', show:true },
     { pg:'unified', label:'Unified View', show:true },
+    { pg:'download', label:'⬇ Downloads', show:true },
     { pg:'log', label:'My Log', show:true },
     { pg:'director', label:'👁️ Director', show:canViewDirector(CU) },
     { pg:'admin', label:'⚙️ User Admin', show:canManageUsers(CU) }
@@ -1392,7 +1393,8 @@ const today = document.getElementById('dir-date')?.value || new Date().toISOStri
   }
 
   if (canViewUnified(CU)) html += sbItem('unified','📊','Unified View');
-  if (CU.canDownload) html += sbItem('download','⬇','Downloads');
+  if (ROLE_DEFAULTS[CU.role]?.canDownload) 
+  html += sbItem('download','⬇','Downloads');
 
   html += sbItem('log','📁','My Log', DB.byUser(CU.username).length);
 

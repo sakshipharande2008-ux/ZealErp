@@ -569,6 +569,8 @@ body{font-family:'Mulish',sans-serif;background:var(--bg);color:var(--ink);min-h
       <div class="page" id="page-download"></div>
       <div class="page" id="page-log"></div>
       <div class="page" id="page-form"></div>
+      <div class="page" id="page-student-attendance"></div> <!-- ADD THIS -->
+
       <div class="page" id="page-director"></div>
       <div class="page" id="page-admin"></div>
     </div>
@@ -1353,6 +1355,8 @@ async function showPage(pg) {
   else if (pg==='log') renderLog();
   else if (pg==='director') renderDirector();
   else if (pg==='admin') renderAdmin();
+  else if (pg==='student-attendance') renderStudentAttendance();
+
 }
 
 function openForm(id) {
@@ -1398,9 +1402,9 @@ const today = document.getElementById('dir-date')?.value || new Date().toISOStri
 
   html += sbItem('log','📁','My Log', DB.byUser(CU.username).length);
 
-  if(CU.role === 'faculty'){
+  
   html += sbItem('student-attendance','📋','Student Attendance');
-}
+
 
   if (canManageUsers(CU)) html += sbItem('admin','⚙️','User Admin');
 
@@ -1633,6 +1637,32 @@ document.getElementById('page-student-attendance').innerHTML = html;
 
 loadAttendanceTable();
 
+}
+
+  function loadAttendanceTable(){
+
+  const container = document.getElementById("attendance-table");
+
+  if(!container) return;
+
+  container.innerHTML = `
+    <table class="ut">
+      <thead>
+        <tr>
+          <th>Roll No</th>
+          <th>Name</th>
+          <th>Attendance %</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>101</td>
+          <td>Demo Student</td>
+          <td>85%</td>
+        </tr>
+      </tbody>
+    </table>
+  `;
 }
 
 function addStudentAttendance(){

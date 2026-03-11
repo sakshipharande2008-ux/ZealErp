@@ -1915,6 +1915,7 @@ function renderDownload() {
     mOpts += `<option value="${m}" ${m===curMonth?'selected':''}>${mn}</option>`;
   }
 
+  const acc = ACCESS_META[CU.access];
   const visibleSubs = filterByAccess(DB.all() || [], CU) || [];
   const todayVisible = visibleSubs.filter(s => s.date === today);
 

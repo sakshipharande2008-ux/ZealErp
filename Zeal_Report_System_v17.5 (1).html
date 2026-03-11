@@ -1973,7 +1973,7 @@ function refreshUT() {
 // ================================================================
 // DOWNLOAD PAGE (privacy-filtered)
 // ================================================================
-function renderDownload() {
+async function renderDownload() {
   if (!ROLE_DEFAULTS[CU.role]?.canDownload) {
     document.getElementById('page-download').innerHTML = accessDeniedHTML('Downloads', 'Download access is not enabled for your account. Only HOD, Principal, and Director can download reports.', CU);
     return;
@@ -2115,7 +2115,7 @@ function renderDownload() {
       <h3>📦 Full Backup</h3>
       <p>Export ALL data from all institutes and departments</p>
       <div style="margin-bottom:14px">
-        <div style="font-size:13px;font-weight:600;color:var(--slate)">Total Records: <span style="color:#e94560;font-family:'Syne',sans-serif;font-size:18px">${DB.all().length}</span></div>
+        <div style="font-size:13px;font-weight:600;color:var(--slate)">Total Records: <span style="color:#e94560;font-family:'Syne',sans-serif;font-size:18px">${allSubs.length}</span></div>
         <div style="font-size:11.5px;color:var(--muted);margin-top:3px">Unrestricted · ${new Date().toLocaleDateString('en-IN')}</div>
       </div>
       <div class="btn-row">
@@ -2133,7 +2133,8 @@ function renderDownload() {
       <tbody>${[...REPORTS.faculty,...REPORTS.hod,...REPORTS.principal].map(r=>{
         const role2=r.id.startsWith('F')?'faculty':r.id.startsWith('H')?'hod':'principal';
         if(!CU.canViewRoles.includes(role2)) return '';
-        const subs=visibleSubs.filter(s=>s.reportId===r.id);
+        const allSubs = await DB.all() || [];
+        const visibleSubs = filterByAccess(allSubs, CU) || [];
         const last=subs.length?subs[subs.length-1]:null;
         const rc2=role2==='faculty'?'f':role2==='hod'?'h':'p';
         return `<tr>

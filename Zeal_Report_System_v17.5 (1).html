@@ -1467,8 +1467,12 @@ function renderDashboard() {
   const submitted = todaySubs.length;
   const pending = reps.length - submitted;
   const pct = reps.length ? Math.round((submitted/reps.length)*100) : 0;
-  const dateStr = new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  const rc = {faculty:'f',hod:'h',principal:'p'}[CU.role]||'f';
+const dateStr = new Date(today).toLocaleDateString('en-IN',{
+  weekday:'long',
+  day:'numeric',
+  month:'long',
+  year:'numeric'
+});  const rc = {faculty:'f',hod:'h',principal:'p'}[CU.role]||'f';
   const roleLabel = getUserRoles(CU).join(' + ').toUpperCase();
   const totalMine = DB.byUser(CU.username).length;
   const accessMeta = ACCESS_META[CU.access] || ACCESS_META['OWN_ONLY'] || {color:'#6366f1',label:'Personal Only'};
@@ -3634,8 +3638,7 @@ function renderDirector() {
     document.getElementById('page-director').innerHTML = accessDeniedHTML('Director View', 'This page is exclusively for the Director. Your current role does not permit access to cross-institutional analytics.', CU);
     return;
   }
-  const today = new Date().toISOString().slice(0,10);
-  const allSubs = DB.all();
+const today = document.getElementById('dir-date')?.value || new Date().toISOString().slice(0,10);  const allSubs = DB.all();
   const todaySubs = allSubs.filter(s=>s.date===today);
   const dateStr = new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const timeStr = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
@@ -3676,7 +3679,7 @@ function renderDirector() {
   <div style="font-family:'Syne',sans-serif;font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px">Institute Health Cards — Click for full details</div>
   <div class="health-grid">`;
 
-  const selDate = document.getElementById?.('dir-date')?.value || today;
+  // const selDate = document.getElementById?.('dir-date')?.value || today;
   INSTITUTES.forEach(inst=>{
     const h = calcHealth(inst.key, today);
     const circ=2*Math.PI*27, offset=circ-(h.score/100)*circ, col=scoreColor(h.score);

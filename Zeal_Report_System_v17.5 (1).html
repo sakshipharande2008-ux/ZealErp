@@ -1342,7 +1342,7 @@ function buildTopNav() {
       .join('');
 }
 
-function showPage(pg) {
+async function showPage(pg) {
   activePage = pg;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const el = document.getElementById('page-'+pg);
@@ -1351,7 +1351,7 @@ function showPage(pg) {
   buildSidebar();
   if (pg==='dashboard') renderDashboard();
   else if (pg==='unified') renderUnified();
-  else if (pg==='download') renderDownload();
+  else if (pg==='download') await renderDownload();
   else if (pg==='log') renderLog();
   else if (pg==='director') renderDirector();
   else if (pg==='admin') renderAdmin();

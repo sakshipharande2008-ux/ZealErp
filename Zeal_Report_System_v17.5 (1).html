@@ -1720,6 +1720,73 @@ d2.absent_students = count;
 }
 
 }
+function updateD2D3FromAttendance(rec){
+
+// Only run if student is absent
+if(rec.status !== "Absent") return;
+
+const today = rec.date || new Date().toISOString().slice(0,10);
+const now = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+
+// -------------------------
+// CREATE FACULTY D3 ENTRY
+// -------------------------
+DB.add({
+
+```
+id: Date.now(),
+
+reportId: "F-D3",
+reportCode: "F-D3",
+reportName: "Absent Student Record",
+
+userId: CU.username,
+userName: CU.name,
+role: "faculty",
+
+institute: CU.institute,
+dept: CU.dept,
+
+date: today,
+time: now,
+status: "Auto",
+
+data:{
+  student: rec.student,
+  division: rec.division,
+  gfm: rec.gfm,
+  parent_contact: rec.parent_contact,
+  remark: "Auto: Student marked absent"
+}
+```
+
+});
+
+// -------------------------
+// UPDATE FACULTY D2 COUNT
+// -------------------------
+const allSubs = DB.all();
+
+const absents = allSubs.filter(s =>
+s.reportId === "F-D3" &&
+s.date === today &&
+s.data?.gfm === rec.gfm
+);
+
+const absentCount = absents.length;
+
+const d2 = allSubs.find(s =>
+s.reportId === "F-D2" &&
+s.userName === rec.gfm &&
+s.date === today
+);
+
+if(d2){
+if(!d2.data) d2.data = {};
+d2.data.absent_students = absentCount;
+}
+
+}
 
 // ================================================================
 // UNIFIED VIEW (privacy-filtered)

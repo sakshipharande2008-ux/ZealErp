@@ -1512,70 +1512,152 @@ const m = accessMeta;
 // ================================================================
 // UNIFIED VIEW (privacy-filtered)
 // ================================================================
-async function renderUnified() {
-  if (!canViewUnified(CU)) {
-    document.getElementById('page-unified').innerHTML = accessDeniedHTML('Unified View', 'You need at least Department-level access to view this page.', CU);
-    return;
-  }
-  const allSubs = await DB.all();
-  const visibleSubs = filterByAccess(allSubs, CU);
+async function renderUnified(){
+
+  const container = document.getElementById("page-unified");
+  if(!container) return;
+
+  // Safety checks
+  if(!CU) return;
+  if(!CU.canViewRoles) CU.canViewRoles = [];
+
   const today = new Date().toISOString().slice(0,10);
-  const todayVisible = visibleSubs.filter(s=>s.date===today);
-  const m = ACCESS_META[CU.access];
 
-  let html = `<div class="pg-head"><div class="pg-title">Unified View</div>
-    <div class="pg-sub">Showing data within your access scope: <strong style="color:${m.color}">${m.label}</strong></div>
+  // Load submissions
+  let subs = [];
+  try{
+    subs = await Store.getAll();
+  }catch(e){
+    console.error("Unified load error:",e);
+  }
+
+  if(!subs) subs = [];
+
+  // Filter only what user can see
+  const visibleSubs = subs.filter(s => CU.canViewRoles.includes(s.role));
+  const todayVisible = visibleSubs.filter(s => s.date === today);
+
+  let html = `
+  <div class="pg-head">
+    <div class="pg-title">Unified View</div>
+    <div class="pg-sub">All reports visible based on your access level</div>
   </div>
-  <div class="unified-head">
-    <div><h2>Submission Overview</h2>
-      <p>${CU.access === ACCESS.DEPT_ONLY ? `${CU.institute} · ${CU.dept} dept only` : CU.access === ACCESS.INST_ONLY ? CU.institute + ' – all departments' : 'All institutes · All departments'}</p>
-    </div>
-    <div class="date-filter">
-      <label>Date:</label>
-      <input type="date" id="ufilter-date" value="${today}" onchange="refreshUT()">
-      <select id="ufilter-role" onchange="refreshUT()">
-        <option value="">All Roles</option>
-        ${CU.canViewRoles.map(r=>`<option value="${r}">${r.charAt(0).toUpperCase()+r.slice(1)}</option>`).join('')}
-      </select>
-    </div>
-  </div>
+
   <div class="stats-row">
-    <div class="stat"><div class="stat-icon">📦</div><div class="stat-num">${visibleSubs.length}</div><div class="stat-label">Visible to You (All Time)</div></div>
-    <div class="stat grn"><div class="stat-icon">📅</div><div class="stat-num">${todayVisible.length}</div><div class="stat-label">Today (Visible)</div></div>
-    ${CU.canViewRoles.map(r=>{
-      const cnt = visibleSubs.filter(s=>s.role===r).length;
-      const rc2 = r==='faculty'?'f':r==='hod'?'h':'p';
-      const col = r==='faculty'?'var(--faculty)':r==='hod'?'var(--hod)':'var(--principal)';
-      return `<div class="stat" style="border-top-color:${col}"><div class="stat-icon">${r==='faculty'?'👩‍🏫':r==='hod'?'🎓':'🏛️'}</div><div class="stat-num">${cnt}</div><div class="stat-label">${r.charAt(0).toUpperCase()+r.slice(1)} Submissions</div></div>`;
-    }).join('')}
-  </div>`;
+    <div class="stat">
+      <div class="stat-icon">📦</div>
+      <div class="stat-num">${visibleSubs.length}</div>
+      <div class="stat-label">Visible to You (All Time)</div>
+    </div>
 
-  CU.canViewRoles.filter(r=>r!=='director').forEach(role=>{
-    const rLabel = {faculty:'Faculty Reports (D1–D5)',hod:'HOD Reports (D1–D5)',principal:'Principal Reports (D1–D3)'};
-    const rIcon = {faculty:'👩‍🏫',hod:'🎓',principal:'🏛️'};
-    const rClass = {faculty:'f',hod:'h',principal:'p'};
-    const rSubs = visibleSubs.filter(s=>s.role===role&&s.date===today);
-    const rTotal = visibleSubs.filter(s=>s.role===role).length;
-    html += `<div style="margin-bottom:22px">
+    <div class="stat grn">
+      <div class="stat-icon">📅</div>
+      <div class="stat-num">${todayVisible.length}</div>
+      <div class="stat-label">Today (Visible)</div>
+    </div>
+
+    ${(CU.canViewRoles || []).map(r=>{
+      const cnt = visibleSubs.filter(s=>s.role===r).length;
+
+      const icon = r==='faculty'?'👩‍🏫':r==='hod'?'🎓':'🏛️';
+      const col  = r==='faculty'?'var(--faculty)':r==='hod'?'var(--hod)':'var(--principal)';
+
+      return `
+      <div class="stat" style="border-top-color:${col}">
+        <div class="stat-icon">${icon}</div>
+        <div class="stat-num">${cnt}</div>
+        <div class="stat-label">${r.charAt(0).toUpperCase()+r.slice(1)} Submissions</div>
+      </div>`;
+    }).join('')}
+  </div>
+  `;
+
+  // Role sections
+  (CU.canViewRoles || []).filter(r=>r!=='director').forEach(role=>{
+
+    const rLabel = {
+      faculty:'Faculty Reports (D1–D5)',
+      hod:'HOD Reports (D1–D5)',
+      principal:'Principal Reports (D1–D3)'
+    };
+
+    const rIcon = {
+      faculty:'👩‍🏫',
+      hod:'🎓',
+      principal:'🏛️'
+    };
+
+    const rClass = {
+      faculty:'f',
+      hod:'h',
+      principal:'p'
+    };
+
+    const rSubs  = visibleSubs.filter(s=>s.role===role && s.date===today);
+    const rTotal = visibleSubs.filter(s=>s.role===role);
+
+    html += `
+    <div style="margin-bottom:22px">
+
       <div class="role-hdr ${rClass[role]}">
+
         <div class="rhi ${rClass[role]}">${rIcon[role]}</div>
-        <div><div class="rht">${rLabel[role]||role}</div><div class="rhs-info">${rTotal} visible submissions</div></div>
+
+        <div>
+          <div class="rht">${rLabel[role] || role}</div>
+          <div class="rhs-info">${rTotal.length} visible submissions</div>
+        </div>
+
         <div class="rhs-stats">
-          <div><div class="rhs-n">${rSubs.length}</div><div class="rhs-l">Today</div></div>
-          <div><div class="rhs-n">${rTotal}</div><div class="rhs-l">All Time</div></div>
+          <div>
+            <div class="rhs-n">${rSubs.length}</div>
+            <div class="rhs-l">Today</div>
+          </div>
+          <div>
+            <div class="rhs-n">${rTotal.length}</div>
+            <div class="rhs-l">All Time</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="overflow-x:auto">
+          <table class="ut">
+            <thead>
+              <tr>
+                <th>Report</th>
+                <th>Submitted By</th>
+                <th>Institute</th>
+                <th>Dept</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rTotal.map(s=>`
+                <tr>
+                  <td>${s.code || '-'}</td>
+                  <td>${s.name || '-'}</td>
+                  <td>${s.institute || '-'}</td>
+                  <td>${s.dept || '-'}</td>
+                  <td>${s.date || '-'}</td>
+                  <td>${s.time || '-'}</td>
+                  <td><span class="tag submitted">Submitted</span></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
         </div>
       </div>
-      <div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto">
-      <table class="ut" id="ut-${role}">
-        <thead><tr><th>Report</th><th>Submitted By</th><th>Institute</th><th>Dept</th><th>Date</th><th>Time</th><th>Status</th></tr></thead>
-        <tbody id="utb-${role}"></tbody>
-      </table></div></div>
-    </div>`;
+
+    </div>
+    `;
+
   });
-  html += `<div style="font-size:11px;color:var(--muted);margin-top:8px;padding:10px 14px;background:#f8fafc;border-radius:8px;display:flex;align-items:center;gap:8px">
-    🔒 <span>Data filtered to your access scope. Other departments/institutes are not visible to you.</span></div>`;
-  document.getElementById('page-unified').innerHTML = html;
-  refreshUT();
+
+  container.innerHTML = html;
 }
 
 function refreshUT() {

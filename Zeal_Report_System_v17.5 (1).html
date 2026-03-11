@@ -1979,189 +1979,273 @@ function refreshUT() {
 // DOWNLOAD PAGE (privacy-filtered)
 // ================================================================
 async function renderDownload() {
+
   if (!ROLE_DEFAULTS[CU.role]?.canDownload) {
-    document.getElementById('page-download').innerHTML = accessDeniedHTML('Downloads', 'Download access is not enabled for your account. Only HOD, Principal, and Director can download reports.', CU);
+    document.getElementById('page-download').innerHTML =
+      accessDeniedHTML(
+        'Downloads',
+        'Download access is not enabled for your account.',
+        CU
+      );
     return;
   }
+
   const today = new Date().toISOString().slice(0,10);
+
   const now = new Date();
   const curYear = now.getFullYear();
-  const curMonth = now.getMonth()+1;
+  const curMonth = now.getMonth() + 1;
+
+  // Month dropdown options
   let mOpts = '';
-  for(let m=1;m<=12;m++) {
-    const mn = new Date(curYear,m-1).toLocaleString('default',{month:'long'});
+  for(let m=1; m<=12; m++){
+    const mn = new Date(curYear, m-1).toLocaleString('default',{month:'long'});
     mOpts += `<option value="${m}" ${m===curMonth?'selected':''}>${mn}</option>`;
   }
 
   const acc = ACCESS_META[CU.access];
-  const visibleSubs = filterByAccess(DB.all() || [], CU) || [];
-  const todayVisible = visibleSubs.filter(s => s.date === today);
 
-  // Collect unique institutes and departments from visible submissions
+  const allSubs = await DB.all() || [];
+  const visibleSubs = filterByAccess(allSubs, CU) || [];
+
+  // Collect unique institutes and departments
   const instSet  = [...new Set(visibleSubs.map(s=>s.institute).filter(Boolean))].sort();
   const deptSet  = [...new Set(visibleSubs.map(s=>s.dept).filter(Boolean))].sort();
 
   const instOpts = instSet.map(i=>`<option value="${i}">${i}</option>`).join('');
   const deptOpts = deptSet.map(d=>`<option value="${d}">${d}</option>`).join('');
-  const roleOpts = CU.canViewRoles.filter(r=>r!=='director').map(r=>`<option value="${r}">${r.charAt(0).toUpperCase()+r.slice(1)}</option>`).join('');
+
+  const roleOpts = CU.canViewRoles
+    .filter(r=>r!=='director')
+    .map(r=>`<option value="${r}">${r.charAt(0).toUpperCase()+r.slice(1)}</option>`)
+    .join('');
 
   let html = `
-  <div class="pg-head">
-  <div class="pg-title">Download & Export</div>
-  <div class="pg-sub">
-    Scope: <strong style="color:#1d4ed8">All Institutes</strong> · ${visibleSubs.length} accessible records
-  </div>
-</div>
 
-<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:11px 16px;margin-bottom:20px;font-size:12.5px;color:var(--slate);display:flex;align-items:center;gap:10px">
-🔒 <span>All downloads are automatically scoped to your access level.</span>
-</div>
-<!-- ===== COMBINED REPORT BUILDER ===== -->
+  <div class="pg-head">
+    <div class="pg-title">Download & Export</div>
+    <div class="pg-sub">
+      Scope: <strong style="color:${acc.color}">${acc.label}</strong>
+      · ${visibleSubs.length} accessible records
+    </div>
+  </div>
+
+  <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:11px 16px;margin-bottom:20px;font-size:12.5px;color:var(--slate);display:flex;align-items:center;gap:10px">
+  🔒 <span>All downloads are automatically scoped to your access level.</span>
+  </div>
+
+
+  <!-- COMBINED REPORT BUILDER -->
+
   <div class="card" style="margin-bottom:22px;border:2px solid #e0e7ff">
+
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
-      <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📋</div>
+      <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:20px">📋</div>
+
       <div>
-        <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#1e1b4b">Combined Report Builder</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">Includes all data: Faculty D1–D5 · HOD D1–D5 · Principal D1–D3. Grouped by Institute → Department. Downloadable by HOD, Principal & Director.</div>
+        <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#1e1b4b">
+        Combined Report Builder
+        </div>
+
+        <div style="font-size:12px;color:var(--muted)">
+        Includes Faculty D1–D5 · HOD D1–D5 · Principal D1–D3 reports
+        </div>
       </div>
     </div>
 
+
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px">
+
       <div class="fld">
-        <label style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Institute</label>
-        <select id="cb-inst" onchange="cbPreview()" style="margin-top:6px">
+        <label>Institute</label>
+        <select id="cb-inst" onchange="cbPreview()">
           <option value="">All Institutes</option>
           ${instOpts}
         </select>
       </div>
+
       <div class="fld">
-        <label style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Department</label>
-        <select id="cb-dept" onchange="cbPreview()" style="margin-top:6px">
+        <label>Department</label>
+        <select id="cb-dept" onchange="cbPreview()">
           <option value="">All Departments</option>
           ${deptOpts}
         </select>
       </div>
+
       <div class="fld">
-        <label style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Role</label>
-        <select id="cb-role" onchange="cbPreview()" style="margin-top:6px">
+        <label>Role</label>
+        <select id="cb-role" onchange="cbPreview()">
           <option value="">All Roles</option>
           ${roleOpts}
         </select>
       </div>
+
       <div class="fld">
-        <label style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">From Date</label>
-        <input type="date" id="cb-from" value="${today}" oninput="cbPreview()" style="margin-top:6px">
+        <label>From Date</label>
+        <input type="date" id="cb-from" value="${today}" oninput="cbPreview()">
       </div>
+
       <div class="fld">
-        <label style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">To Date</label>
-        <input type="date" id="cb-to" value="${today}" oninput="cbPreview()" style="margin-top:6px">
+        <label>To Date</label>
+        <input type="date" id="cb-to" value="${today}" oninput="cbPreview()">
       </div>
+
       <div class="fld">
-        <label style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Group By</label>
-        <select id="cb-group" onchange="cbPreview()" style="margin-top:6px">
+        <label>Group By</label>
+        <select id="cb-group" onchange="cbPreview()">
           <option value="institute-dept">Institute → Department → Role</option>
           <option value="role-institute">Role → Institute → Department</option>
           <option value="date-institute">Date → Institute → Department</option>
         </select>
       </div>
+
     </div>
 
-    <!-- Live preview strip -->
-    <div id="cb-preview" style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:16px;min-height:60px">
-      <div style="font-size:11.5px;color:var(--muted)">Adjust filters above to preview the report…</div>
+
+    <div id="cb-preview"
+    style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:16px">
+
+      <div style="font-size:11.5px;color:var(--muted)">
+      Adjust filters above to preview the report…
+      </div>
+
     </div>
 
-    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      <button onclick="downloadCombined()" style="background:linear-gradient(135deg,#4f46e5,#7c3aed);color:white;border:none;border-radius:9px;padding:11px 24px;font-size:13.5px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px;box-shadow:0 4px 12px rgba(79,70,229,.3)">
-        🖨️ Download Combined PDF
-      </button>
-      <div style="font-size:11.5px;color:var(--muted)">Opens in browser → Print → Save as PDF</div>
-    </div>
+
+    <button onclick="downloadCombined()"
+    style="background:linear-gradient(135deg,#4f46e5,#7c3aed);color:white;border:none;border-radius:9px;padding:11px 24px;font-size:13.5px;font-weight:800;cursor:pointer">
+
+    🖨 Download Combined PDF
+
+    </button>
+
   </div>
 
-  <!-- ===== QUICK EXPORTS ===== -->
-  <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--ink);margin-bottom:12px">Quick Exports</div>
-  <div class="dl-grid" style="margin-bottom:22px">
+
+  <!-- QUICK EXPORTS -->
+
+  <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--ink);margin-bottom:12px">
+  Quick Exports
+  </div>
+
+
+  <div class="dl-grid">
+
     <div class="dl-card">
+
       <h3>📅 Daily Export</h3>
       <p>All visible submissions for a specific date</p>
+
       <div class="dl-flt">
-        <label style="font-size:11px;font-weight:700;color:var(--muted)">Select Date</label>
         <input type="date" id="dl-date" value="${today}">
         <select id="dl-daily-role">
           <option value="">All Roles</option>
           ${roleOpts}
         </select>
       </div>
+
       <div class="btn-row">
         <button class="btn-da csv" onclick="exportFiltered('daily','csv')">⬇ CSV</button>
         <button class="btn-da xl" onclick="exportFiltered('daily','excel')">⬇ Excel</button>
       </div>
+
     </div>
+
+
     <div class="dl-card gold">
+
       <h3>📆 Monthly Export</h3>
       <p>All visible submissions for a full month</p>
+
       <div class="dl-flt">
-        <label style="font-size:11px;font-weight:700;color:var(--muted)">Select Month</label>
         <select id="dl-month">${mOpts}</select>
-        <select id="dl-year">${[2024,2025,2026].map(y=>`<option ${y===curYear?'selected':''}>${y}</option>`).join('')}</select>
+        <select id="dl-year">
+          ${[2024,2025,2026].map(y=>`<option ${y===curYear?'selected':''}>${y}</option>`).join('')}
+        </select>
+
         <select id="dl-monthly-role">
           <option value="">All Roles</option>
           ${roleOpts}
         </select>
       </div>
+
       <div class="btn-row">
         <button class="btn-da csv" onclick="exportFiltered('monthly','csv')">⬇ CSV</button>
         <button class="btn-da json" onclick="exportFiltered('monthly','json')">⬇ JSON</button>
       </div>
+
     </div>
-    ${CU.access===ACCESS.DIRECTOR?`
-    <div class="dl-card dir">
-      <h3>📦 Full Backup</h3>
-      <p>Export ALL data from all institutes and departments</p>
-      <div style="margin-bottom:14px">
-        <div style="font-size:13px;font-weight:600;color:var(--slate)">Total Records: <span style="color:#e94560;font-family:'Syne',sans-serif;font-size:18px">${allSubs.length}</span></div>
-        <div style="font-size:11.5px;color:var(--muted);margin-top:3px">Unrestricted · ${new Date().toLocaleDateString('en-IN')}</div>
-      </div>
-      <div class="btn-row">
-        <button class="btn-da csv" onclick="exportAll('csv')">⬇ All CSV</button>
-        <button class="btn-da json" onclick="exportAll('json')">⬇ Full JSON</button>
-      </div>
-    </div>`:``}
+
   </div>
 
-  <!-- ===== REPORT SUMMARY TABLE ===== -->
+
+  <!-- REPORT SUMMARY -->
+
   <div class="card">
-    <div class="card-title">Report Summary – Visible to You</div>
-    <div style="overflow-x:auto"><table class="ut">
-      <thead><tr><th>Report</th><th>Name</th><th>Role</th><th>Submissions</th><th>Last Submitted</th><th>Download</th></tr></thead>
-      <tbody>${[...REPORTS.faculty,...REPORTS.hod,...REPORTS.principal].map(r=>{
-        <tbody>${[...REPORTS.faculty,...REPORTS.hod,...REPORTS.principal].map(r=>{
-          const role2 = r.id.startsWith('F') ? 'faculty' : r.id.startsWith('H') ? 'hod' : 'principal';
-          if(!CU.canViewRoles.includes(role2)) return '';
-        
-          const subs = visibleSubs.filter(s => s.reportId === r.id);
-          const last = subs.length ? subs[subs.length - 1] : null;
-        const rc2=role2==='faculty'?'f':role2==='hod'?'h':'p';
-        return `<tr>
-          <td><span class="tag ${rc2}">${r.code}</span></td>
-          <td style="font-weight:500">${r.name}</td>
-          <td><span class="tag ${rc2}">${role2.toUpperCase()}</span></td>
-          <td style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;color:var(--teal)">${subs.length}</td>
-          <td style="color:var(--muted);font-size:11.5px">${last?`${last.date} ${last.time}`:'Never'}</td>
-          <td style="white-space:nowrap">${subs.length
-            ? `<button onclick="downloadSubmission(${last.id})" style="background:#dcfce7;color:var(--success);border:1px solid #86efac;border-radius:6px;padding:5px 10px;font-size:11.5px;font-weight:700;cursor:pointer">⬇ Latest</button>
-               <button onclick="showAllSubsModal('${r.id}','${r.name}')" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;padding:5px 10px;font-size:11.5px;font-weight:700;cursor:pointer;margin-left:5px">All (${subs.length})</button>`
-            : '<span style="color:var(--muted);font-size:12px">None</span>'}</td>
-        </tr>`;
-      }).join('')}</tbody>
-    </table></div>
-  </div>`;
+
+  <div class="card-title">Report Summary – Visible to You</div>
+
+  <div style="overflow-x:auto">
+
+  <table class="ut">
+
+  <thead>
+  <tr>
+  <th>Report</th>
+  <th>Name</th>
+  <th>Role</th>
+  <th>Submissions</th>
+  <th>Last Submitted</th>
+  </tr>
+  </thead>
+
+  <tbody>
+
+  ${[...REPORTS.faculty,...REPORTS.hod,...REPORTS.principal].map(r=>{
+
+    const role2 = r.id.startsWith('F') ? 'faculty' : r.id.startsWith('H') ? 'hod' : 'principal';
+
+    if(!CU.canViewRoles.includes(role2)) return '';
+
+    const subs = visibleSubs.filter(s => s.reportId === r.id);
+
+    const last = subs.length ? subs[subs.length-1] : null;
+
+    const rc2 = role2==='faculty'?'f':role2==='hod'?'h':'p';
+
+    return `
+    <tr>
+
+      <td><span class="tag ${rc2}">${r.code}</span></td>
+
+      <td>${r.name}</td>
+
+      <td><span class="tag ${rc2}">${role2.toUpperCase()}</span></td>
+
+      <td>${subs.length}</td>
+
+      <td>${last ? `${last.date} ${last.time}` : 'Never'}</td>
+
+    </tr>
+    `;
+
+  }).join('')}
+
+  </tbody>
+
+  </table>
+
+  </div>
+
+  </div>
+  `;
+
 
   document.getElementById('page-download').innerHTML = html;
-  cbPreview(); // run initial preview
-}
 
+  cbPreview();
+
+}
 // ── Live preview of combined filter ──
 function cbPreview() {
   const inst  = document.getElementById('cb-inst')?.value  || '';
